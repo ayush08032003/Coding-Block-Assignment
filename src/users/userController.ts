@@ -4,6 +4,7 @@ import { pool } from "../database/db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { config } from "../config/config";
+import { UserTypes } from "./userTypes";
 const registerUser = async (
   req: Request,
   res: Response,
@@ -105,4 +106,24 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
   return;
 };
 
-export { registerUser, loginUser };
+const userDetail = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = req.params.userId;
+
+  const getData = await pool.query("SELECT * FROM users WHERE user_id = $1", [
+    userId,
+  ]);
+
+  if (getData.rows.length === 0) {
+    next(createHttpError(404, "User Not Found"));
+    return;
+  }
+
+  const data = (getData.rows[0] as UserTypes).username;
+
+  res.json({
+    message: "User Details",
+    userData: data,
+  });
+};
+
+export { registerUser, loginUser, userDetail };
