@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { config } from "../config/config";
 import { UserTypes } from "./userTypes";
+import { CustomRequest } from "../middleware/auth";
 const registerUser = async (
   req: Request,
   res: Response,
@@ -126,4 +127,47 @@ const userDetail = async (req: Request, res: Response, next: NextFunction) => {
   });
 };
 
-export { registerUser, loginUser, userDetail };
+const editBlogs = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as CustomRequest).userId;
+    const username = (req as CustomRequest).username;
+    const blogId = req.params.blogId;
+    const { description } = req.body;
+
+    if (!description) {
+      next(createHttpError(400, "Description is required for Editing a Blog"));
+      return;
+    }
+
+    // check if the currentUser is valid for updating the blog
+    const blogData = await pool.query(
+      "SELECT * FROM blog WHERE blog_id = $1 AND user_id = $2",
+      [blogId, userId]
+    );
+    if (blogData.rows.length === 0) {
+      next(
+        createHttpError(403, "This Blog is Not Authorized to be Updated By You")
+      );
+      return;
+    }
+
+    const updateBlog = await pool.query(
+      "UPDATE blog SET description = $1 WHERE blog_id = $2 AND user_id = $3 RETURNING *",
+      [description, blogId, userId]
+    );
+
+    res.json({
+      message: "Blog Updated Successfully",
+      blogData: updateBlog.rows[0],
+    });
+    return;
+  } catch (err) {
+    console.log(err);
+    next(createHttpError(500, "Internal Server Error while Querying..!"));
+    return;
+  }
+
+  return;
+};
+
+export { registerUser, loginUser, userDetail, editBlogs };

@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import { globalErrorHandler } from "./middleware/globalErrorHandler";
 import { loginUser, registerUser } from "./users/userController";
+import { userRouter } from "./users/userRouter";
 import createHttpError from "http-errors";
 const app = express();
 
@@ -18,6 +19,7 @@ app.get("/", (req: Request, res: Response, next: NextFunction) => {
 
 app.post("/register", registerUser); // register a new user
 app.post("/login", loginUser); // login a new User.
+app.use("/users", userRouter);
 
 app.use(globalErrorHandler);
 
