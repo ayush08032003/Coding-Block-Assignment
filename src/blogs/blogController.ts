@@ -38,14 +38,40 @@ const createBlog = async (req: Request, res: Response, next: NextFunction) => {
   return; // this should not be reachable..
 };
 
+
 const getAllBlogs = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const allBlogs = await pool.query("SELECT * FROM blog");
+    // Get page and limit from query parameters, set default values if not provided
+    const page = parseInt(req.query.page as string) || 1;  // Default page to 1
+    const limit = parseInt(req.query.limit as string) || 10;  // Default limit to 10
+
+    // Calculate the offset
+    const offset = (page - 1) * limit;
+
+    // Query to get total count of blogs for pagination info
+    const countResult = await pool.query("SELECT COUNT(*) FROM blog");
+    const totalBlogs = parseInt(countResult.rows[0].count);
+
+    // Query to get paginated blogs
+    const allBlogs = await pool.query(
+      "SELECT * FROM blog  LIMIT $1 OFFSET $2",
+      [limit, offset]
+    );
+
+    // Calculate total number of pages
+    const totalPages = Math.ceil(totalBlogs / limit);
+
+    // Respond with the paginated data
     res.json({
       message: "All Blogs",
       blogData: allBlogs.rows,
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalBlogs: totalBlogs,
+        blogsPerPage: limit,
+      },
     });
-    return;
   } catch (error) {
     console.log(error);
     next(
@@ -54,9 +80,7 @@ const getAllBlogs = async (req: Request, res: Response, next: NextFunction) => {
         "Internal Server Error - getAllBlogs - blogController"
       )
     );
-    return;
   }
-  return;
 };
 
 const getSingleBlock = async (
