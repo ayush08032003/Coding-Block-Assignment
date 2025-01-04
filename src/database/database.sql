@@ -22,3 +22,7 @@ CREATE TABLE comment (
     CONSTRAINT fk_blog FOREIGN KEY (blog_id) REFERENCES blog(blog_id) ON DELETE CASCADE,
     CONSTRAINT fk_user_comment FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
+
+ALTER TABLE comment
+ADD COLUMN parent_id INT,
+ADD CONSTRAINT fk_parent_comment FOREIGN KEY (parent_id) REFERENCES comment(comment_id) ON DELETE CASCADE;

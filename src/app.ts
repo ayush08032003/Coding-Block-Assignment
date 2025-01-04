@@ -4,6 +4,7 @@ import { loginUser, registerUser } from "./users/userController";
 import { userRouter } from "./users/userRouter";
 import createHttpError from "http-errors";
 import { blogRouter } from "./blogs/blogRouter";
+import { commentRouter } from "./comments/commentRouter";
 const app = express();
 
 app.use(express.json());
@@ -23,6 +24,7 @@ app.post("/login", loginUser); // login a new User.
 app.use("/users", userRouter);
 
 app.use("/blogs", blogRouter);
+app.use("/comments", commentRouter);
 
 app.use(globalErrorHandler);
 
