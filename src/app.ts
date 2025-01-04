@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
 import { globalErrorHandler } from "./middleware/globalErrorHandler";
-import { registerUser } from "./users/userController";
+import { loginUser, registerUser } from "./users/userController";
 import createHttpError from "http-errors";
 const app = express();
 
@@ -16,11 +16,8 @@ app.get("/", (req: Request, res: Response, next: NextFunction) => {
   return;
 });
 
-// rsgister a new User
-app.post("/register", registerUser);
-// app.post("/register", (req: Request, res: Response, next: NextFunction) => {});
-
-// app.post("/login");
+app.post("/register", registerUser); // register a new user
+app.post("/login", loginUser); // login a new User.
 
 app.use(globalErrorHandler);
 

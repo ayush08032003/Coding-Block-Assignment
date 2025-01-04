@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import createHttpError from "http-errors";
 import { pool } from "../database/db";
 import bcrypt from "bcrypt";
-import { hash } from "crypto";
+import jwt from "jsonwebtoken";
+import { config } from "../config/config";
 const registerUser = async (
   req: Request,
   res: Response,
@@ -44,12 +45,64 @@ const registerUser = async (
     });
     return;
   } catch (err) {
+    console.log(err);
     next(createHttpError(500, "Internal Server Error"));
     return;
   }
   return; // this is not reachable..
 };
 
-const loginUser = (req: Request, res: Response, next: NextFunction) => {};
+const loginUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, password } = req.body;
 
-export { registerUser };
+    if (!email || !password) {
+      next(createHttpError(400, "All fields are required"));
+      return;
+    }
+
+    let getUserData = null;
+    try {
+      getUserData = await pool.query("SELECT * FROM users WHERE email = $1", [
+        email,
+      ]);
+    } catch (err) {
+      console.log(err);
+      next(createHttpError(500, "Internal Server Error while Querying..!"));
+      return;
+    }
+
+    //   console.log(getUserData.rows[0]);
+    const hashedPassword = getUserData.rows[0].password;
+
+    const isPasswordValid = await bcrypt.compare(password, hashedPassword);
+    if (!isPasswordValid) {
+      next(createHttpError(400, "Invalid Password"));
+      return;
+    }
+
+    const token = jwt.sign(
+      {
+        userId: getUserData.rows[0].user_id,
+        username: getUserData.rows[0].username,
+      },
+      config.jwt_secret,
+      {
+        expiresIn: "2 days",
+      }
+    );
+
+    res.status(200).json({
+      message: `Hi, ${getUserData.rows[0].username}`,
+      token: token,
+    });
+    return;
+  } catch (error) {
+    console.log(error);
+    next(createHttpError(500, "Internal Server Error"));
+    return;
+  }
+  return;
+};
+
+export { registerUser, loginUser };
