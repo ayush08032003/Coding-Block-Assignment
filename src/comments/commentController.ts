@@ -73,14 +73,28 @@ const addComment = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const getComments = async (req: Request, res: Response, next: NextFunction) => {
-  const { post_id } = req.query;
+  const { post_id, page = 1, pageSize = 10 } = req.query;
+
   if (!post_id) {
     next(createHttpError(400, "Please Provide Post Id"));
     return;
   }
 
   try {
-    // Recursive query to fetch comments and all their nested child comments
+    // Parse page and pageSize to integers
+    const pageNumber = parseInt(page as string);
+    const pageSizeNumber = parseInt(pageSize as string);
+
+    // Make sure page and pageSize are positive numbers
+    if (pageNumber <= 0 || pageSizeNumber <= 0) {
+      next(createHttpError(400, "Page and pageSize must be positive numbers"));
+      return;
+    }
+
+    // Calculate the OFFSET for pagination
+    const offset = (pageNumber - 1) * pageSizeNumber;
+
+    // Recursive query to fetch comments with pagination
     const result = await pool.query(
       `
         WITH RECURSIVE comment_tree AS (
@@ -97,8 +111,13 @@ const getComments = async (req: Request, res: Response, next: NextFunction) => {
           INNER JOIN comment_tree ct ON ct.comment_id = c.parent_id
         )
         SELECT * FROM comment_tree
+        LIMIT $2 OFFSET $3
       `,
-      [parseInt(post_id as string)] // Ensure the post_id is parsed to an integer
+      [
+        parseInt(post_id as string), // blog_id
+        pageSizeNumber, // LIMIT
+        offset, // OFFSET
+      ]
     );
 
     // Map the result rows to the commentTypes structure
@@ -110,9 +129,11 @@ const getComments = async (req: Request, res: Response, next: NextFunction) => {
       user_id: row.user_id,
     }));
 
-    // Return the mapped comments as a response
+    // Return the mapped comments as a response with pagination info
     res.json({
       message: "Comments fetched successfully",
+      page: pageNumber,
+      pageSize: pageSizeNumber,
       commentData,
     });
   } catch (error) {
