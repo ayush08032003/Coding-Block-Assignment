@@ -59,4 +59,41 @@ const getAllBlogs = async (req: Request, res: Response, next: NextFunction) => {
   return;
 };
 
-export { createBlog, getAllBlogs };
+const getSingleBlock = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const blogId = req.params.blogId;
+    const userId = (req as CustomRequest).userId;
+    // const userId = 2;
+
+    const getBlog = await pool.query(
+      "SELECT * FROM blog WHERE blog_id=$1 AND user_id=$2",
+      [blogId, userId]
+    );
+    if (getBlog.rows.length === 0) {
+      next(createHttpError(404, "Blog Not Found"));
+      return;
+    }
+
+    res.json({
+      message: "Blog You Requested",
+      blogData: getBlog.rows[0],
+    });
+    return;
+  } catch (error) {
+    console.log(error);
+    next(
+      createHttpError(
+        500,
+        "Internal Server Error - getSingleBlock - blogController"
+      )
+    );
+    return;
+  }
+  return;
+};
+
+export { createBlog, getAllBlogs, getSingleBlock };

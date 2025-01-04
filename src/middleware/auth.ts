@@ -23,9 +23,9 @@ const userAuth = async (req: Request, res: Response, next: NextFunction) => {
     }
 
     try {
-      const decode  = jwt.verify(token, config.jwt_secret) as CustomJWTPayload;
-      (req as CustomRequest).userId = (decode).userId as number;
-      (req as CustomRequest).username = (decode).username as string;
+      const decode = jwt.verify(token, config.jwt_secret) as CustomJWTPayload;
+      (req as CustomRequest).userId = decode.userId as number;
+      (req as CustomRequest).username = decode.username as string;
 
       next();
     } catch (error) {
