@@ -24,7 +24,7 @@ const registerUser = async (
       "SELECT * FROM users WHERE email = $1",
       [email]
     );
-    if (existingUser) {
+    if (existingUser.rows.length > 0) {
       next(
         createHttpError(
           400,
@@ -68,6 +68,10 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
       getUserData = await pool.query("SELECT * FROM users WHERE email = $1", [
         email,
       ]);
+      if(getUserData.rows.length === 0){
+        next(createHttpError(404, "User Not Found"));
+        return;
+      }
     } catch (err) {
       console.log(err);
       next(createHttpError(500, "Internal Server Error while Querying..!"));
