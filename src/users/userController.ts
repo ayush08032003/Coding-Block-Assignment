@@ -108,23 +108,29 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const userDetail = async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.params.userId;
+  try {
+    const userId = req.params.userId;
 
-  const getData = await pool.query("SELECT * FROM users WHERE user_id = $1", [
-    userId,
-  ]);
+    const getData = await pool.query("SELECT * FROM users WHERE user_id = $1", [
+      userId,
+    ]);
 
-  if (getData.rows.length === 0) {
-    next(createHttpError(404, "User Not Found"));
+    if (getData.rows.length === 0) {
+      next(createHttpError(404, "User Not Found"));
+      return;
+    }
+
+    const data = (getData.rows[0] as UserTypes).username;
+
+    res.json({
+      message: "User Details",
+      userData: data,
+    });
+  } catch (error) {
+    console.log(error);
+    next(createHttpError(500, "Internal Server Error - userDetail"));
     return;
   }
-
-  const data = (getData.rows[0] as UserTypes).username;
-
-  res.json({
-    message: "User Details",
-    userData: data,
-  });
 };
 
 const editBlogs = async (req: Request, res: Response, next: NextFunction) => {
@@ -163,11 +169,46 @@ const editBlogs = async (req: Request, res: Response, next: NextFunction) => {
     return;
   } catch (err) {
     console.log(err);
-    next(createHttpError(500, "Internal Server Error while Querying..!"));
+    next(createHttpError(500, "Internal Server Error while Editing Blogs..!"));
     return;
   }
 
   return;
 };
 
-export { registerUser, loginUser, userDetail, editBlogs };
+const deleteBlog = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as CustomRequest).userId;
+    const blogId = req.params.blogId;
+
+    // check if the user is authorized to Delete this blog
+    const blogData = await pool.query(
+      "SELECT * FROM blog WHERE blog_id = $1 AND user_id = $2",
+      [blogId, userId]
+    );
+    if (blogData.rows.length === 0) {
+      next(
+        createHttpError(403, "This Blog is Not Authorized to be Deleted By You")
+      );
+      return;
+    }
+
+    const blogDelete = await pool.query(
+      "DELETE FROM blog WHERE blog_id = $1 AND user_id = $2 RETURNING *",
+      [blogId, userId]
+    );
+
+    res.json({
+      message: "Blog Deleted Successfully",
+      blogData: blogDelete.rows[0],
+    });
+    return;
+  } catch (error) {
+    console.log(error);
+    next(createHttpError(500, "Internal Server Error while Deleting Blog..!"));
+    return;
+  }
+  return;
+};
+
+export { registerUser, loginUser, userDetail, editBlogs, deleteBlog };

@@ -1,5 +1,5 @@
 import express from "express";
-import { editBlogs, userDetail } from "./userController";
+import { deleteBlog, editBlogs, userDetail } from "./userController";
 import { userAuth } from "../middleware/auth";
 const userRouter = express.Router();
 
@@ -9,6 +9,6 @@ userRouter.get("/:userId", userDetail);
 // Edit an existing blog post.
 userRouter.put("/:blogId", userAuth, editBlogs);
 
-userRouter.delete("/:blogId");
+userRouter.delete("/:blogId", userAuth, deleteBlog);
 
 export { userRouter };
