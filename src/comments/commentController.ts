@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import createHttpError from "http-errors";
 import { pool } from "../database/db";
 import { CustomRequest } from "../middleware/auth";
+import { commentTypes } from "./commentTypes";
 
 const addComment = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -32,6 +33,17 @@ const addComment = async (req: Request, res: Response, next: NextFunction) => {
         next(createHttpError(404, "Parent Comment Not Found"));
         return;
       }
+
+      const parentBlogId = parentComment.rows[0].blog_id;
+      if (parentBlogId !== blog_id) {
+        next(
+          createHttpError(
+            400,
+            "Parent Comment's Blog ID must match the current Blog ID"
+          )
+        );
+        return;
+      }
     }
     const parentCommentId = parent_id ? parent_id : null;
 
@@ -60,4 +72,53 @@ const addComment = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { addComment };
+const getComments = async (req: Request, res: Response, next: NextFunction) => {
+  const { post_id } = req.query;
+  if (!post_id) {
+    next(createHttpError(400, "Please Provide Post Id"));
+    return;
+  }
+
+  try {
+    // Recursive query to fetch comments and all their nested child comments
+    const result = await pool.query(
+      `
+        WITH RECURSIVE comment_tree AS (
+          -- Base case: get the top-level comments (parent_id IS NULL)
+          SELECT comment_id, description, parent_id, blog_id, user_id
+          FROM comment
+          WHERE blog_id = $1 AND parent_id IS NULL
+          
+          UNION ALL
+          
+          -- Recursive case: get the child comments
+          SELECT c.comment_id, c.description, c.parent_id, c.blog_id, c.user_id
+          FROM comment c
+          INNER JOIN comment_tree ct ON ct.comment_id = c.parent_id
+        )
+        SELECT * FROM comment_tree
+      `,
+      [parseInt(post_id as string)] // Ensure the post_id is parsed to an integer
+    );
+
+    // Map the result rows to the commentTypes structure
+    const commentData: commentTypes[] = result.rows.map((row) => ({
+      comment_id: row.comment_id,
+      description: row.description,
+      parent_id: row.parent_id, // parent_id could be null
+      blog_id: row.blog_id,
+      user_id: row.user_id,
+    }));
+
+    // Return the mapped comments as a response
+    res.json({
+      message: "Comments fetched successfully",
+      commentData,
+    });
+  } catch (error) {
+    console.error(error);
+    next(createHttpError(500, "Internal Server Error - getComments"));
+  }
+};
+
+export { addComment, getComments };
