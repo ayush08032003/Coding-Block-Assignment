@@ -28,9 +28,6 @@ It provides functionality for users to register, log in, create blogs, edit blog
 7. [Error Handling](#error-handling)
 8. [Contributing](#contributing)
 ---
-Thank you for providing the GitHub link. You can update the **Installation** and **Docker Setup** sections of your `README.md` with the actual GitHub repository link as follows:
-
----
 
 ## Installation
 
@@ -278,6 +275,3 @@ Contributions are welcome! If you have ideas or improvements for the project, fe
 ## Conclusion
 
 This project is a simple yet powerful multi-service blog platform that demonstrates the integration of JWT authentication, user management, and CRUD operations for blog posts. It's designed to be extensible and deployable on the cloud via Docker and AWS.
-
-Feel free to expand upon the project, add new features, or modify it according to your needs.
-
