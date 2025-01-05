@@ -1,0 +1,27 @@
+version: "3.7"
+
+services:
+  postgres:
+    image: postgres:alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydatabase
+
+  backend:
+    build: .
+    image: backend-app:latest
+    ports:
+      - "8080:8080"
+      - "4053:4053"
+      - "3000:3000"
+    environment:
+      - DATABASE_HOST=postgres
+      - DATABASE_USER=user
+      - DATABASE_PASSWORD=password
+      - DATABASE_NAME=mydatabase
+    depends_on:
+      - postgres
