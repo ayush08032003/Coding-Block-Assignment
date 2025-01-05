@@ -6,10 +6,8 @@ services:
     container_name: postgres
     ports:
       - "5432:5432"
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mydatabase
+    env_file:
+      - .env  # This will load environment variables from the .env file
 
   backend:
     build: .
@@ -18,10 +16,7 @@ services:
       - "8080:8080"
       - "4053:4053"
       - "3000:3000"
-    environment:
-      - DATABASE_HOST=postgres
-      - DATABASE_USER=user
-      - DATABASE_PASSWORD=password
-      - DATABASE_NAME=mydatabase
+    env_file:
+      - .env  # This will load environment variables from the .env file
     depends_on:
       - postgres
